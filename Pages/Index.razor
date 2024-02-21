@@ -1,0 +1,190 @@
+﻿@page "/"
+
+@using Syncfusion.Blazor.FileManager
+@using FileManager.Data
+@using Microsoft.AspNetCore.Mvc
+@inject PhysicalFileProvider PhysicalFileProvider
+@inject FileService FileService
+<SfFileManager TValue="CustomFileManagerDirectoryContent" View="ViewType.Details">
+    <FileManagerUploadSettings DirectoryUpload=false></FileManagerUploadSettings>
+    <FileManagerEvents TValue="CustomFileManagerDirectoryContent" OnRead="OnRead"></FileManagerEvents>
+</SfFileManager>
+@code{
+    public class CustomFileManagerDirectoryContent : FileManagerDirectoryContent
+    {
+        public Stream StreamData {get; set; }
+    }
+    public List<CustomFileManagerDirectoryContent> Data { get; set; }
+    List<string> SubFolders { get; set; }
+    List<CustomFileManagerDirectoryContent> SubFolderList{ get; set; }
+
+    protected override void OnInitialized()
+    {
+        var data = PhysicalFileProvider.GetFiles("/", false, null);
+        Data = new List<CustomFileManagerDirectoryContent>();
+        Data.Add(data.CWD);
+        Data.AddRange(data.Files);
+        SubFolders = new List<string>();
+        SubFolders = data.Files
+            .Where(file => !file.IsFile)
+            .Select(file => (file.FilterPath + file.Name).Replace(@"\", "/", StringComparison.Ordinal) + "/")
+            .ToList();
+        SubFolderList = new List<CustomFileManagerDirectoryContent>();
+        SubFolderList = data.Files.Where(file => !file.IsFile).ToList();
+        for(int i =0; i < SubFolderList.Count; i++)
+        {
+            string path = (SubFolderList[i].FilterPath + SubFolderList[i].Name).Replace(@"\", "/", StringComparison.Ordinal) + "/";
+            var NestedData = PhysicalFileProvider.GetFiles(path, false, SubFolderList[i]);
+            Data.AddRange(NestedData.Files);
+            List<CustomFileManagerDirectoryContent> NestedFiles = NestedData.Files
+                            .Where(file => !file.IsFile)
+                            .ToList();
+            SubFolderList.AddRange(NestedFiles);
+        }
+  //       for (int i = 0; i < SubFolders.Count; i++)
+  //       {
+  //           var NestedData = PhysicalFileProvider.GetFiles(SubFolders[i], false, null);
+  //           Data.AddRange(NestedData.Files);
+		// 	List<string> NestedFiles = NestedData.Files
+  //                           .Where(file => !file.IsFile)
+  //                           .Select(file => (file.FilterPath + file.Name).Replace(@"\", "/", StringComparison.Ordinal) + "/")
+  //                           .ToList();
+		// 	SubFolders.AddRange(NestedFiles);
+		// }
+     
+    }
+
+    public void OnRead(ReadEventArgs<CustomFileManagerDirectoryContent> args)
+    {
+        args.Response = FileService.Read(args.Path, Data, args.FileDetails);
+    }
+
+    // public void OnDelete(DeleteEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+    //     args.Response = PhysicalFileProvider.Delete(args.Path, args.Names, args.FileDetails);
+    // }
+
+    // public void Deleted(DeletedEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+
+    // }
+
+    // public void OnDetails(DetailsEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+    //     string[] names = args.FileDetails.Select(x => x.Name).ToArray();
+    //     args.Response = PhysicalFileProvider.Details(args.Path, names, args.FileDetails);
+    // }
+
+    // public void OnModelCreate(FolderCreateEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+    //     args.Response = PhysicalFileProvider.Create(args.Path, args.CreatedFolderName, args.FileDetails);
+    // }
+
+    // public void ModelCreated(FolderCreatedEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+
+    // }
+
+    // public void OnSearch(SearchEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+    //     args.Response = PhysicalFileProvider.Search(args.Path, args.SearchString, false, false, args.FileDetails);
+    // }
+
+    // public void OnRename(RenameEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+    //     args.Response = PhysicalFileProvider.Rename(args.Path, args.Name, args.NewName, false, args.ShowFileExtension, args.FileDetails);
+    // }
+
+    // public void Renamed(RenamedEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+
+    // }
+
+    // public void OnCopy(TransferEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+    //     args.Response = PhysicalFileProvider.Copy(args.Path, args.TargetPath, args.Names, args.RenameFiles, args.TargetData, args.FileDetails);
+    // }
+
+    // public void Copied(TransferedEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+
+    // }
+
+    // public void OnMove(TransferEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+    //     args.Response = PhysicalFileProvider.Move(args.Path, args.TargetPath, args.Names, args.RenameFiles, args.TargetData, args.FileDetails);
+    // }
+
+    // public void Moved(TransferedEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+
+    // }
+    // void OnSend(BeforeSendEventArgs args)
+    // {
+
+    // }
+    // public void OnUpload(UploadEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+    //     //PhysicalFileProvider.UploadFlatData(args.Path, args.FilesData, args.Action, args.FileDetails);
+    // }
+    // public void OnSuccess(SuccessEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+
+    // }
+    // public async Task UploadSuccess(UploadSuccessEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+    //     args.IsSelected = true;
+    //     args.AutoDialogClose = true;
+    //     try
+    //     {
+    //         foreach (var file in args.Files)
+    //         {
+    //             var folders = (file.FileInfo.Name).Split('/');
+    //                 // checking the folder upload
+    //                 if (folders.Length > 1)
+    //                 {
+    //                     for (var i = 0; i < folders.Length - 1; i++)
+    //                     {
+    //                         string newDirectoryPath = Path.Combine(PhysicalFileProvider.basePath + args.Path, folders[i]);
+    //                         if (Path.GetFullPath(newDirectoryPath) != (Path.GetDirectoryName(newDirectoryPath) + Path.DirectorySeparatorChar + folders[i]))
+    //                         {
+    //                             throw new UnauthorizedAccessException("Access denied for Directory-traversal");
+    //                         }
+    //                         if (!Directory.Exists(newDirectoryPath))
+    //                         {
+    //                            PhysicalFileProvider.Create(args.Path, folders[i]);
+    //                         }
+    //                         args.Path += folders[i] + "/";
+    //                     }
+    //                 }
+    //             var fullName = Path.Combine((PhysicalFileProvider.contentRootPath + args.Path), file.File.Name);
+    //             using (var filestream = new FileStream(fullName, FileMode.Create, FileAccess.Write))
+    //             {
+    //                 await file.File.OpenReadStream(long.MaxValue).CopyToAsync(filestream);
+    //             }
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Console.WriteLine(ex.Message);
+    //     }
+    // }
+
+    // public void BeforeImageLoad(BeforeImageLoadEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+    //     var result = PhysicalFileProvider.GetImage(args.ImagePath, false, args.FileDetails);
+    //     args.FileStream = result.FileStream;
+    // }
+
+    // public void BeforeDownload(BeforeDownloadEventArgs<CustomFileManagerDirectoryContent> args)
+    // {
+    //     var downloadData = PhysicalFileProvider.Download(args.DownloadData.Path, args.DownloadData.Names, args.DownloadData.DownloadFileDetails.ToArray());
+    //     args.FileStream = downloadData.FileStream;
+    //     args.DownloadFileName = downloadData.FileDownloadName;
+    // }
+}
+
+
+
+
+

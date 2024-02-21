@@ -1,0 +1,373 @@
+﻿@page "/counter"
+
+@using Syncfusion.Blazor.FileManager
+@using FileManager.Data
+@using Microsoft.AspNetCore.Mvc
+@inject FileService PhysicalFileProvider
+<SfFileManager TValue="FileManagerDirectoryContent" View="ViewType.LargeIcons">
+    <FileManagerUploadSettings DirectoryUpload=false></FileManagerUploadSettings>
+@*     <FileManagerEvents TValue="FileManagerDirectoryContent" OnRead="OnRead" OnDelete="OnDelete" Deleted="Deleted" OnGetDetails="OnDetails" OnFolderCreate="OnModelCreate" FolderCreated="ModelCreated" OnSearch="OnSearch" OnRename="OnRename" Renamed="Renamed" OnCopy="OnCopy" Copied="Copied" OnMove="OnMove" Moved="Moved" OnUpload="OnUpload" OnSuccess="OnSuccess" UploadSuccess="UploadSuccess" BeforeImageLoad="BeforeImageLoad" BeforeDownload="BeforeDownload" ></FileManagerEvents>
+ *@</SfFileManager>
+@code{
+    public List<FileManagerDirectoryContent> Data { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Data = await GetFlatFileEntries();
+    }
+
+    // public void OnRead(ReadEventArgs<FileManagerDirectoryContent> args)
+    // {
+    //     args.Response = PhysicalFileProvider.Read(args.Path, Data, args.FileDetails);
+    // }
+
+    public void OnDelete(DeleteEventArgs<FileManagerDirectoryContent> args)
+    {
+        string[] names = args.FileDetails.Select(x => x.Name).ToArray();
+        args.Response = PhysicalFileProvider.Delete(args.Path, Data, args.FileDetails);
+    }
+
+    public void Deleted(DeletedEventArgs<FileManagerDirectoryContent> args)
+    {
+
+    }
+
+    public void OnDetails(DetailsEventArgs<FileManagerDirectoryContent> args)
+    {
+        string[] names = args.FileDetails.Select(x => x.Name).ToArray();
+        args.Response = PhysicalFileProvider.Details(args.Path, Data, args.FileDetails);
+    }
+
+    public void OnModelCreate(FolderCreateEventArgs<FileManagerDirectoryContent> args)
+    {
+        args.Response = PhysicalFileProvider.Create(args.Path, args.CreatedFolderName, Data, args.FileDetails);
+    }
+
+    public void ModelCreated(FolderCreatedEventArgs<FileManagerDirectoryContent> args)
+    {
+
+    }
+
+    public void OnSearch(SearchEventArgs<FileManagerDirectoryContent> args)
+    {
+        args.Response = PhysicalFileProvider.Search(args.Path, args.SearchString, Data, args.FileDetails);
+    }
+
+    public void OnRename(RenameEventArgs<FileManagerDirectoryContent> args)
+    {
+        args.Response = PhysicalFileProvider.Rename(args.Path, args.NewName, Data, args.FileDetails);
+    }
+
+    public void Renamed(RenamedEventArgs<FileManagerDirectoryContent> args)
+    {
+
+    }
+
+    public void OnCopy(TransferEventArgs<FileManagerDirectoryContent> args)
+    {
+        args.Response = PhysicalFileProvider.Copy(args.Path, args.TargetData, Data, args.FileDetails);
+    }
+
+    public void Copied(TransferedEventArgs<FileManagerDirectoryContent> args)
+    {
+
+    }
+
+    public void OnMove(TransferEventArgs<FileManagerDirectoryContent> args)
+    {
+        args.Response = PhysicalFileProvider.Move(args.Path, args.TargetData, Data, args.FileDetails);
+    }
+
+    public void Moved(TransferedEventArgs<FileManagerDirectoryContent> args)
+    {
+
+    }
+    public void OnUpload(UploadEventArgs<FileManagerDirectoryContent> args)
+    {
+        //PhysicalFileProvider.UploadFlatData(args.Path, args.FilesData, args.Action, args.FileDetails);
+    }
+    public void OnSuccess(SuccessEventArgs<FileManagerDirectoryContent> args)
+    {
+
+    }
+    public async Task UploadSuccess(UploadSuccessEventArgs<FileManagerDirectoryContent> args)
+    {
+        
+    }
+
+    public void BeforeImageLoad(BeforeImageLoadEventArgs<FileManagerDirectoryContent> args)
+    {
+        var result = PhysicalFileProvider.GetExampleStream();
+        args.FileStream = result.FileStream;
+    }
+
+    public void BeforeDownload(BeforeDownloadEventArgs<FileManagerDirectoryContent> args)
+    {
+        var downloadData = PhysicalFileProvider.GetExampleStream();
+        args.FileStream = downloadData.FileStream;
+        args.DownloadFileName = "Syncfusion.png";
+    }
+
+    private async Task<List<FileManagerDirectoryContent>> GetFlatFileEntries()
+	{
+		List<FileManagerDirectoryContent> Data = new List<FileManagerDirectoryContent>();
+		Data.Add(new FileManagerDirectoryContent()
+        {
+            CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+            FilterPath = "",
+			FilterId = "",
+            HasChild = true,
+            Id = "0",
+            IsFile = false,
+            Name = "Files",
+            ParentId = null,
+            ShowHiddenItems = false,
+            Size = 0,
+            Type = "folder"
+        });
+		Data.Add(new FileManagerDirectoryContent()
+        {
+            CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+			FilterId ="0/",
+			FilterPath = "/",
+			HasChild = false,
+			Id = "1",
+			IsFile = false,
+			Name = "Documents",
+			ParentId = "0",
+			ShowHiddenItems = false,
+			Size = 0,
+			Type = "folder"
+		});
+		Data.Add(new FileManagerDirectoryContent()
+        {
+            CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+			FilterId ="0/",
+			FilterPath = "/",
+			HasChild = false,
+			Id = "2",
+			IsFile = false,
+			Name = "Downloads",
+			ParentId = "0",
+			ShowHiddenItems = false,
+			Size = 0,
+			Type = "folder"
+		});
+		Data.Add(new FileManagerDirectoryContent()
+        {
+            CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+			FilterId ="0/",
+			FilterPath = "/",
+			HasChild = true,
+			Id = "3",
+			IsFile = false,
+			Name = "Pictures",
+			ParentId = "0",
+			ShowHiddenItems = false,
+			Size = 0,
+			Type = "folder"
+		});
+		Data.Add(new FileManagerDirectoryContent()
+        {
+            CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+			FilterId ="0/",
+			FilterPath = "/",
+			HasChild = false,
+			Id = "4",
+			IsFile = false,
+			Name = "Music",
+			ParentId = "0",
+			ShowHiddenItems = false,
+			Size = 0,
+			Type = "folder"
+		});
+		Data.Add(new FileManagerDirectoryContent()
+        {
+            CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+			FilterId ="0/",
+			FilterPath = "/",
+			HasChild = false,
+			Id = "5",
+			IsFile = false,
+			Name = "Videos",
+			ParentId = "0",
+			ShowHiddenItems = false,
+			Size = 0,
+			Type = "folder"
+		});
+		Data.Add(new FileManagerDirectoryContent()
+        {
+            CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+			FilterId ="0/",
+			FilterPath = "/",
+			HasChild = true,
+			Id = "12",
+			IsFile = false,
+			Name = "Testing",
+			ParentId = "0",
+			ShowHiddenItems = false,
+			Size = 0,
+			Type = "folder"
+		});
+		Data.Add(new FileManagerDirectoryContent()
+        {
+            CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+			FilterId ="0/12/",
+			FilterPath = "/Testing/",
+			HasChild = true,
+			Id = "13",
+			IsFile = false,
+			Name = "Testing-Nested",
+			ParentId = "12",
+			ShowHiddenItems = false,
+			Size = 0,
+			Type = "folder"
+		});
+		Data.Add(new FileManagerDirectoryContent()
+        {
+            CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+			FilterId ="0/12/13/",
+			FilterPath = "/Testing/Testing-Nested/",
+			HasChild = false,
+			Id = "14",
+			IsFile = false,
+			Name = "Testing-Third-level",
+			ParentId = "13",
+			ShowHiddenItems = false,
+			Size = 0,
+			Type = "folder"
+		});
+		Data.Add(new FileManagerDirectoryContent()
+        {
+			CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+			FilterId ="0/1/",
+            FilterPath = "/Documents/",
+			HasChild = false,
+			Id = "6",
+			IsFile = true,
+			Name = "Syncfusion.png",
+			ParentId = "1",
+			ShowHiddenItems = false,
+			Size = 12403,
+			Type = ".png"
+        });
+		Data.Add(new FileManagerDirectoryContent()
+        {
+			CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+			FilterId ="0/2/",
+            FilterPath = "/Downloads/",
+			HasChild = false,
+			Id = "7",
+			IsFile = true,
+			Name = "EJ2 File Manager.pdf",
+			ParentId = "2",
+			ShowHiddenItems = false,
+			Size = 90099,
+			Type = ".pdf"
+        });
+		Data.Add(new FileManagerDirectoryContent()
+        {
+            CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+            FilterId ="0/3/",
+            FilterPath = "/Pictures/",
+            HasChild = false,
+            Id = "8",
+            IsFile = true,
+            Name = "File Manager PPT.pptx",
+            ParentId = "3",
+            ShowHiddenItems = false,
+            Size = 578010,
+            Type = ".pptx"
+        });
+		Data.Add(new FileManagerDirectoryContent()
+        {
+            CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+            FilterId ="0/3/",
+            FilterPath = "/Pictures/",
+            HasChild = false,
+            Id = "15",
+            IsFile = true,
+            Name = "Text Document.txt",
+            ParentId = "3",
+            ShowHiddenItems = false,
+            Size = 578010,
+            Type = ".txt"
+        });
+		Data.Add(new FileManagerDirectoryContent()
+        {
+            CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+            FilterId ="0/4/",
+            FilterPath = "/Music/",
+            HasChild = false,
+            Id = "9",
+            IsFile = true,
+            Name = "File Manager.txt",
+            ParentId = "4",
+            ShowHiddenItems = false,
+            Size = 274,
+            Type = ".txt"
+        });
+		Data.Add(new FileManagerDirectoryContent()
+        {
+			CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+			FilterId ="0/3/",
+			FilterPath = "/Pictures/",
+			HasChild = false,
+			Id = "10",
+			IsFile = false,
+			Name = "Employees",
+			ParentId = "3",
+			ShowHiddenItems = false,
+			Size = 0,
+			Type = "folder"
+        });
+		Data.Add(new FileManagerDirectoryContent()
+        {
+            CaseSensitive = false,
+            DateCreated = new DateTime(2022, 1, 2),
+            DateModified = new DateTime(2022, 2, 3),
+            FilterId ="0/1/10/",
+            FilterPath = "/Pictures/Employees/",
+            HasChild = false,
+            Id = "11",
+            IsFile = true,
+            Name = "1.pdf",
+            ParentId = "10",
+            ShowHiddenItems = false,
+            Size = 49792,
+            Type = ".pdf"
+        });
+		return Data;
+	}
+}
+
