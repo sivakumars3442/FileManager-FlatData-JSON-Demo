@@ -7,113 +7,58 @@
 @inject FileService FileService
 <SfFileManager TValue="CustomFileManagerDirectoryContent">
     <FileManagerUploadSettings DirectoryUpload=false></FileManagerUploadSettings>
-    <FileManagerEvents TValue="CustomFileManagerDirectoryContent" OnRead="OnRead" OnDelete="OnDelete" Deleted="Deleted" OnGetDetails="OnDetails" OnFolderCreate="OnModelCreate" FolderCreated="ModelCreated" OnSearch="OnSearch" OnRename="OnRename" Renamed="Renamed" OnCopy="OnCopy" Copied="Copied" OnMove="OnMove" Moved="Moved" OnSuccess="OnSuccess" BeforeImageLoad="BeforeImageLoad" BeforeDownload="BeforeDownload"></FileManagerEvents>
+    <FileManagerEvents TValue="CustomFileManagerDirectoryContent" OnRead="OnRead" ItemsDeleting="ItemsDeleting" FolderCreating="FolderCreating" Searching="Searching" ItemRenaming="ItemRenaming" ItemsCopying="ItemsCopying" ItemsMoving="ItemsMoving" BeforeImageLoad="BeforeImageLoad" BeforeDownload="BeforeDownload"></FileManagerEvents>
 </SfFileManager>
 @code{
     public class CustomFileManagerDirectoryContent : FileManagerDirectoryContent
     {
         public Stream StreamData {get; internal set; }
     }
-    public List<CustomFileManagerDirectoryContent> Data { get; set; }
-    List<string> SubFolders { get; set; }
-    List<CustomFileManagerDirectoryContent> SubFolderList{ get; set; }
+    public static List<CustomFileManagerDirectoryContent> Data { get; set; } = new List<CustomFileManagerDirectoryContent>();
 
     protected override void OnInitialized()
     {
-        var data = PhysicalFileProvider.GetFiles("/", false, null);
-        Data = new List<CustomFileManagerDirectoryContent>();
-        Data.Add(data.CWD);
-        Data.AddRange(data.Files);
-        SubFolders = new List<string>();
-        SubFolders = data.Files
-            .Where(file => !file.IsFile)
-            .Select(file => (file.FilterPath + file.Name).Replace(@"\", "/", StringComparison.Ordinal) + "/")
-            .ToList();
-        SubFolderList = new List<CustomFileManagerDirectoryContent>();
-        SubFolderList = data.Files.Where(file => !file.IsFile).ToList();
-        for(int i =0; i < SubFolderList.Count; i++)
-        {
-            string path = (SubFolderList[i].FilterPath + SubFolderList[i].Name).Replace(@"\", "/", StringComparison.Ordinal) + "/";
-            var NestedData = PhysicalFileProvider.GetFiles(path, false, SubFolderList[i]);
-            Data.AddRange(NestedData.Files);
-            List<CustomFileManagerDirectoryContent> NestedFiles = NestedData.Files
-                            .Where(file => !file.IsFile)
-                            .ToList();
-            SubFolderList.AddRange(NestedFiles);
-        }
+        Data = PhysicalFileProvider.GetData();
     }
 
     public async Task OnRead(ReadEventArgs<CustomFileManagerDirectoryContent> args)
     {
-        args.Response = await FileService.Read(args.Path, Data, args.FileDetails);
+        args.Response = await FileService.Read(args.Path, Data, args.Files);
     }
 
-    public async Task OnDelete(DeleteEventArgs<CustomFileManagerDirectoryContent> args)
+    public async Task ItemsDeleting(ItemsDeletingEventArgs<CustomFileManagerDirectoryContent> args)
     {
-        args.Response = await FileService.Delete(args.Path, Data, args.FileDetails);
+        args.Response = await FileService.Delete(args.Path, Data, args.Files);
     }
 
-    public void Deleted(DeletedEventArgs<CustomFileManagerDirectoryContent> args)
+    public async Task FolderCreating(FolderCreatingEventArgs<CustomFileManagerDirectoryContent> args)
     {
-
+        args.Response = await FileService.Create(args.Path, args.CreatedFolderName, Data, args.Files);
     }
 
-    public async Task OnDetails(DetailsEventArgs<CustomFileManagerDirectoryContent> args)
+    public async Task Searching(SearchingEventArgs<CustomFileManagerDirectoryContent> args)
     {
-        string[] names = args.FileDetails.Select(x => x.Name).ToArray();
-        args.Response = await FileService.Details(args.Path, Data, args.FileDetails);
+        args.Response = await FileService.Search(args.Path, args.SearchText, Data, args.Files);
     }
 
-    public async Task OnModelCreate(FolderCreateEventArgs<CustomFileManagerDirectoryContent> args)
+    public async Task ItemRenaming(ItemRenamingEventArgs<CustomFileManagerDirectoryContent> args)
     {
-        args.Response = await FileService.Create(args.Path, args.CreatedFolderName, Data, args.FileDetails);
+        args.Response = await FileService.Rename(args.Path, args.NewName, Data, args.Files);
     }
 
-    public void ModelCreated(FolderCreatedEventArgs<CustomFileManagerDirectoryContent> args)
+    public async Task ItemsCopying(ItemsCopyingEventArgs<CustomFileManagerDirectoryContent> args)
     {
-
+        args.Response = await FileService.Copy(args.Path, args.TargetData as CustomFileManagerDirectoryContent, Data, args.Files);
     }
 
-    public async Task OnSearch(SearchEventArgs<CustomFileManagerDirectoryContent> args)
+    public async Task ItemsMoving(ItemsMovingEventArgs<CustomFileManagerDirectoryContent> args)
     {
-        args.Response = await FileService.Search(args.Path, args.SearchString, Data, args.FileDetails);
+        args.Response = await FileService.Move(args.Path, args.TargetData as CustomFileManagerDirectoryContent, Data, args.Files);
     }
 
-    public async Task OnRename(RenameEventArgs<CustomFileManagerDirectoryContent> args)
-    {
-        args.Response = await FileService.Rename(args.Path, args.NewName, Data, args.FileDetails);
-    }
-
-    public void Renamed(RenamedEventArgs<CustomFileManagerDirectoryContent> args)
-    {
-
-    }
-
-    public async Task OnCopy(TransferEventArgs<CustomFileManagerDirectoryContent> args)
-    {
-        args.Response = await FileService.Copy(args.Path, args.TargetData as CustomFileManagerDirectoryContent, Data, args.FileDetails);
-    }
-
-    public void Copied(TransferedEventArgs<CustomFileManagerDirectoryContent> args)
-    {
-
-    }
-
-    public async Task OnMove(TransferEventArgs<CustomFileManagerDirectoryContent> args)
-    {
-        args.Response = await FileService.Move(args.Path, args.TargetData as CustomFileManagerDirectoryContent, Data, args.FileDetails);
-    }
-
-    public void Moved(TransferedEventArgs<CustomFileManagerDirectoryContent> args)
-    {
-
-    }
-    public void OnSuccess(SuccessEventArgs<CustomFileManagerDirectoryContent> args)
-    {
-
-    }
     public void BeforeImageLoad(BeforeImageLoadEventArgs<CustomFileManagerDirectoryContent> args)
     {
+        args.FileDetails.StreamData.Position = 0;
         args.FileStream = args.FileDetails.StreamData;
     }
 

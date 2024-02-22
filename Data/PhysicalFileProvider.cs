@@ -1,30 +1,7 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿using System.IO.Compression;
 using Syncfusion.Blazor.FileManager;
 using static FileManager.Pages.Index;
-using System.IO.Pipes;
-
-
-
-
-#if EJ2_DNX
-using System.Web.Mvc;
-using System.IO.Packaging;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Drawing.Drawing2D;
-using System.Web;
-#else
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Net.Http.Headers;
-#endif
 
 namespace FileManager.Data
 {
@@ -63,6 +40,31 @@ namespace FileManager.Data
             this.AccessDetails = details;
             DirectoryInfo root = new DirectoryInfo(this.contentRootPath);
             this.rootName = root.Name;
+        }
+
+        public List<CustomFileManagerDirectoryContent> GetData()
+        {
+            List<CustomFileManagerDirectoryContent> Data = new List<CustomFileManagerDirectoryContent>();
+            List<CustomFileManagerDirectoryContent> SubFolderList = new List<CustomFileManagerDirectoryContent>();
+            FileManagerResponse<CustomFileManagerDirectoryContent> Response = new FileManagerResponse<CustomFileManagerDirectoryContent>();
+            Response = GetFiles("/", false, null);
+            Data = new List<CustomFileManagerDirectoryContent>();
+            Data.Add(Response.CWD);
+            Data.AddRange(Response.Files);
+            SubFolderList = new List<CustomFileManagerDirectoryContent>();
+            SubFolderList = Response.Files.Where(file => !file.IsFile).ToList();
+            for (int i = 0; i < SubFolderList.Count; i++)
+            {
+                string path = (SubFolderList[i].FilterPath + SubFolderList[i].Name).Replace(@"\", "/", StringComparison.Ordinal) + "/";
+                FileManagerResponse<CustomFileManagerDirectoryContent> NestedData = new FileManagerResponse<CustomFileManagerDirectoryContent>();
+                NestedData = GetFiles(path, false, SubFolderList[i]);
+                Data.AddRange(NestedData.Files);
+                List<CustomFileManagerDirectoryContent> NestedFiles = NestedData.Files
+                                .Where(file => !file.IsFile)
+                                .ToList();
+                SubFolderList.AddRange(NestedFiles);
+            }
+            return Data;
         }
         public FileManagerResponse<CustomFileManagerDirectoryContent> GetFiles(string path, bool showHiddenItems, params CustomFileManagerDirectoryContent[] data)
         {
@@ -170,9 +172,9 @@ namespace FileManager.Data
                 }
                 return readFiles.Files;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                throw e;
+                throw;
             }
         }
 
@@ -222,6 +224,33 @@ namespace FileManager.Data
             {
                 if (!showHiddenItems)
                 {
+                    //var directories = directory.GetDirectories().Where(f => (f.Attributes & FileAttributes.Hidden) == 0);
+
+                    //List<CustomFileManagerDirectoryContent> fileList = new List<CustomFileManagerDirectoryContent>();
+
+                    //foreach (var subDirectory in directories)
+                    //{
+                    //    CustomFileManagerDirectoryContent content = new CustomFileManagerDirectoryContent
+                    //    {
+                    //        Name = subDirectory.Name,
+                    //        Size = 0,
+                    //        IsFile = false,
+                    //        DateModified = subDirectory.LastWriteTime,
+                    //        DateCreated = subDirectory.CreationTime,
+                    //        HasChild = CheckChild(subDirectory.FullName),
+                    //        Type = subDirectory.Extension,
+                    //        FilterPath = GetRelativePath(this.contentRootPath, directory.FullName),
+                    //        Permission = GetPermission(directory.FullName, subDirectory.Name, false),
+                    //        Id = Math.Abs(Guid.NewGuid().GetHashCode()).ToString(),
+                    //        ParentId = data?.FirstOrDefault()?.Id ?? "0",
+                    //        FilterId = data?.FirstOrDefault()?.FilterId + data?.FirstOrDefault()?.Id + "/" ?? "0/"
+                    //    };
+
+                    //    fileList.Add(content);
+                    //}
+
+                    //readDirectory.Files = fileList;
+
                     IEnumerable<CustomFileManagerDirectoryContent> directories = directory.GetDirectories().Where(f => (f.Attributes & FileAttributes.Hidden) == 0)
                             .Select(subDirectory => new CustomFileManagerDirectoryContent
                             {
@@ -236,7 +265,7 @@ namespace FileManager.Data
                                 Permission = GetPermission(directory.FullName, subDirectory.Name, false),
                                 Id = Math.Abs(Guid.NewGuid().GetHashCode()).ToString(),
                                 ParentId = data == null ? 0.ToString() : data[0].Id,
-                                FilterId = data == null ? 0.ToString()+"/" : data[0].FilterId + data[0].Id + "/"
+                                FilterId = data == null ? 0.ToString() + "/" : data[0].FilterId + data[0].Id + "/"
 
                             });
                     readDirectory.Files = directories.Cast<CustomFileManagerDirectoryContent>().ToList();
@@ -265,74 +294,12 @@ namespace FileManager.Data
                 }
                 return readDirectory.Files;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                throw e;
+                throw;
             }
         }
-        public virtual FileManagerResponse<FileManagerDirectoryContent> Create(string path, string name, params FileManagerDirectoryContent[] data)
-        {
-            FileManagerResponse<FileManagerDirectoryContent> createResponse = new FileManagerResponse<FileManagerDirectoryContent>();
-            try
-            {
-                string validatePath;
-                validatePath = Path.Combine(contentRootPath + path);
-                if (Path.GetFullPath(validatePath) != GetFilePath(validatePath))
-                {
-                    throw new UnauthorizedAccessException("Access denied for Directory-traversal");
-                }
-                AccessPermission PathPermission = GetPathPermission(path);
-                if (PathPermission != null && (!PathPermission.Read || !PathPermission.WriteContents))
-                {
-                    accessMessage = PathPermission.Message;
-                    throw new UnauthorizedAccessException("'" + this.getFileNameFromPath(this.rootName + path) + "' is not accessible. You need permission to perform the writeContents action.");
-                }
-
-                string newDirectoryPath = Path.Combine(contentRootPath + path, name);
-                if (Path.GetFullPath(newDirectoryPath) != GetFilePath(newDirectoryPath) + name)
-                {
-                    throw new UnauthorizedAccessException("Access denied for Directory-traversal");
-                }
-                bool directoryExist = Directory.Exists(newDirectoryPath);
-
-                if (directoryExist)
-                {
-                    DirectoryInfo exist = new DirectoryInfo(newDirectoryPath);
-                    ErrorDetails er = new ErrorDetails();
-                    er.Code = "400";
-                    er.Message = "A file or folder with the name " + exist.Name.ToString() + " already exists.";
-                    createResponse.Error = er;
-
-                    return createResponse;
-                }
-
-                string physicalPath = GetPath(path);
-                Directory.CreateDirectory(newDirectoryPath);
-                DirectoryInfo directory = new DirectoryInfo(newDirectoryPath);
-                FileManagerDirectoryContent CreateData = new FileManagerDirectoryContent();
-                CreateData.Name = directory.Name;
-                CreateData.IsFile = false;
-                CreateData.Size = 0;
-                CreateData.DateModified = directory.LastWriteTime;
-                CreateData.DateCreated = directory.CreationTime;
-                CreateData.HasChild = CheckChild(directory.FullName);
-                CreateData.Type = directory.Extension;
-                CreateData.Permission = GetPermission(physicalPath, directory.Name, false);
-                FileManagerDirectoryContent[] newData = new FileManagerDirectoryContent[] { CreateData };
-                createResponse.Files = newData.Cast<FileManagerDirectoryContent>().ToList();
-                return createResponse;
-            }
-            catch (Exception e)
-            {
-                ErrorDetails er = new ErrorDetails();
-                er.Message = e.Message.ToString();
-                er.Code = er.Message.Contains("is not accessible. You need permission") ? "401" : "417";
-                if ((er.Code == "401") && !string.IsNullOrEmpty(accessMessage)) { er.Message = accessMessage; }
-                createResponse.Error = er;
-                return createResponse;
-            }
-        }
-       
+               
         public virtual FileStreamResult Download(string path, string[] names, params CustomFileManagerDirectoryContent[] data)
         {
             try
@@ -375,7 +342,7 @@ namespace FileManager.Data
             }
             catch (Exception)
             {
-                return null;
+                throw;
             }
         }
 
@@ -394,7 +361,7 @@ namespace FileManager.Data
                     {
                         throw new UnauthorizedAccessException("Access denied for Directory-traversal");
                     }
-                    byte[] bytes = System.IO.File.ReadAllBytes(fullPath);
+                    byte[] bytes = File.ReadAllBytes(fullPath);
                     FileStream fileStreamInput = new FileStream(fullPath, FileMode.Open, FileAccess.Read);
                     fileStreamResult = new FileStreamResult(fileStreamInput, "APPLICATION/octet-stream");
                 }
@@ -414,9 +381,9 @@ namespace FileManager.Data
                     string fileName = Guid.NewGuid().ToString() + "temp.zip";
                     string newFileName = fileName.Substring(36);
                     tempPath = Path.Combine(Path.GetTempPath(), newFileName);
-                    if (System.IO.File.Exists(tempPath))
+                    if (File.Exists(tempPath))
                     {
-                        System.IO.File.Delete(tempPath);
+                        File.Delete(tempPath);
                     }
                     string currentDirectory;
                     ZipArchiveEntry zipEntry;
@@ -439,17 +406,12 @@ namespace FileManager.Data
                                     {
                                         throw new UnauthorizedAccessException("Access denied for Directory-traversal");
                                     }
-
-#if SyncfusionFramework4_5
-                                    zipEntry = archive.CreateEntryFromFile(Path.Combine(this.contentRootPath, currentDirectory), names[i]);
-#else
                                     zipEntry = archive.CreateEntryFromFile(Path.Combine(this.contentRootPath, currentDirectory), names[i], CompressionLevel.Fastest);
-#endif
                                 }
                             }
                             catch (Exception)
                             {
-                                return null;
+                                throw;
                             }
                         }
                         else
@@ -465,7 +427,7 @@ namespace FileManager.Data
                     }
                     catch (Exception)
                     {
-                        return null;
+                        throw;
                     }
                 }
                 if (File.Exists(tempPath))
@@ -476,7 +438,7 @@ namespace FileManager.Data
             }
             catch (Exception)
             {
-                return null;
+                throw;
             }
         }
         protected FileStreamResult DownloadFolder(string path, string[] names, int count)
@@ -503,12 +465,7 @@ namespace FileManager.Data
                         throw new UnauthorizedAccessException("Access denied for Directory-traversal");
                     }
                     DirectoryInfo directoryName = new DirectoryInfo(fullPath);
-
-#if SyncfusionFramework4_5
-                    ZipFile.CreateFromDirectory(fullPath, tempPath);
-#else
                     ZipFile.CreateFromDirectory(fullPath, tempPath, CompressionLevel.Fastest, true);
-#endif
                     FileStream fileStreamInput = new FileStream(tempPath, FileMode.Open, FileAccess.Read, FileShare.Delete);
                     fileStreamResult = new FileStreamResult(fileStreamInput, "APPLICATION/octet-stream");
                     fileStreamResult.FileDownloadName = directoryName.Name + ".zip";
@@ -538,34 +495,20 @@ namespace FileManager.Data
                                 {
                                     foreach (string filePath in files)
                                     {
-#if SyncfusionFramework4_5
-                                    zipEntry = archive.CreateEntryFromFile(filePath, names[i] + filePath.Substring(currentDirectory.Length));
-#else
                                         zipEntry = archive.CreateEntryFromFile(filePath, names[i] + filePath.Substring(currentDirectory.Length), CompressionLevel.Fastest);
-#endif
-
                                     }
                                 }
                                 foreach (string filePath in Directory.GetDirectories(currentDirectory, "*", SearchOption.AllDirectories))
                                 {
                                     if (Directory.GetFiles(filePath).Length == 0)
                                     {
-#if SyncfusionFramework4_5
-                                            zipEntry = archive.CreateEntryFromFile(Path.Combine(this.contentRootPath, filePath), filePath.Substring(path.Length));
-#else
                                         zipEntry = archive.CreateEntry(names[i] + filePath.Substring(currentDirectory.Length) + "/");
-#endif
                                     }
                                 }
                             }
                             else
                             {
-#if SyncfusionFramework4_5
-                                    zipEntry = archive.CreateEntryFromFile(Path.Combine(this.contentRootPath, currentDirectory), names[i]);
-#else
                                 zipEntry = archive.CreateEntryFromFile(Path.Combine(this.contentRootPath, currentDirectory), names[i], CompressionLevel.Fastest);
-#endif
-
                             }
                         }
                     }
@@ -581,7 +524,7 @@ namespace FileManager.Data
             }
             catch (Exception)
             {
-                return null;
+                throw;
             }
         }
         protected virtual AccessPermission GetPermission(string location, string name, bool isFile)
@@ -703,17 +646,13 @@ namespace FileManager.Data
             try
             {
                 string fullPath = Path.Combine(path, fileName);
-                if (Path.GetFullPath(fullPath) != GetFilePath(fullPath))
-                {
-                    throw new UnauthorizedAccessException("Access denied for Directory-traversal");
-                }
                 FileAttributes attributes = File.GetAttributes(fullPath);
 
                 return ((attributes & FileAttributes.Directory) != FileAttributes.Directory) ? false : true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return false;
+                throw;
             }
         }
         protected virtual bool HasPermission(Permission rule)
@@ -780,7 +719,7 @@ namespace FileManager.Data
                 }
                 else
                 {
-                    throw e;
+                    throw;
                 }
             }
             return hasChild;
@@ -802,7 +741,7 @@ namespace FileManager.Data
                 }
                 else
                 {
-                    throw e;
+                    throw;
                 }
             }
             return hasAcceess;
@@ -824,7 +763,7 @@ namespace FileManager.Data
             {
                 if (e.GetType().Name != "UnauthorizedAccessException")
                 {
-                    throw e;
+                    throw;
                 }
             }
             return size;
@@ -846,7 +785,7 @@ namespace FileManager.Data
             {
                 if (e.GetType().Name != "UnauthorizedAccessException")
                 {
-                    throw e;
+                    throw;
                 }
             }
             return files;
@@ -868,15 +807,10 @@ namespace FileManager.Data
             {
                 if (e.GetType().Name != "UnauthorizedAccessException")
                 {
-                    throw e;
+                    throw;
                 }
             }
             return files;
-        }
-        private string getFileNameFromPath(string path)
-        {
-            string[] segments = path.TrimEnd('/').Split('/');
-            return segments.LastOrDefault();
         }
 
     }
