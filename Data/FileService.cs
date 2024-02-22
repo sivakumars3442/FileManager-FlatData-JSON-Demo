@@ -9,16 +9,16 @@ using static FileManager.Pages.Index;
 
 namespace FileManager.Data
 {
-	public class FileService
+    public class FileService
 	{
 		public string basePath { get; set; }
 		public FileService(IWebHostEnvironment webHostEnvironment)
 		{
 			basePath = webHostEnvironment.ContentRootPath + "/wwwroot/FileManager/Syncfusion.png";
 		}
-        List<FileManagerDirectoryContent> copyFiles = new List<FileManagerDirectoryContent>();
+        List<CustomFileManagerDirectoryContent> copyFiles = new List<CustomFileManagerDirectoryContent>();
 
-        public FileManagerResponse<CustomFileManagerDirectoryContent> Read(string path, List<CustomFileManagerDirectoryContent> dataSource, CustomFileManagerDirectoryContent[] fileDetails)
+        public Task<FileManagerResponse<CustomFileManagerDirectoryContent>> Read(string path, List<CustomFileManagerDirectoryContent> dataSource, CustomFileManagerDirectoryContent[] fileDetails)
 		{
 			FileManagerResponse<CustomFileManagerDirectoryContent> response = new FileManagerResponse<CustomFileManagerDirectoryContent>();
 			if (path == "/")
@@ -27,37 +27,9 @@ namespace FileManager.Data
 					.Where(x => x.FilterPath == string.Empty)
 					.Select(x => x.Id).First();
 				response.CWD = dataSource
-					.Where(x => x.FilterPath == string.Empty)
-					.Select(x => new CustomFileManagerDirectoryContent()
-					{
-						Id = x.Id,
-						Name = x.Name,
-						Size = x.Size,
-						DateCreated = x.DateCreated,
-						DateModified = x.DateModified,
-						Type = Path.GetExtension(x.Name),
-						HasChild = x.HasChild,
-						ParentId = "",
-						FilterPath = x.FilterPath,
-						FilterId = x.FilterId,
-						IsFile = x.IsFile,
-					}).First();
+					.Where(x => x.FilterPath == string.Empty).First();
 				response.Files = dataSource
-					.Where(x => x.ParentId == ParentId)
-					.Select(x => new CustomFileManagerDirectoryContent()
-					{
-						Id = x.Id,
-						Name = x.Name,
-						Size = x.Size,
-						DateCreated = x.DateCreated,
-						DateModified = x.DateModified,
-						Type = Path.GetExtension(x.Name),
-						ParentId = "0",
-						HasChild = x.HasChild,
-						FilterPath = x.FilterPath,
-						FilterId = x.FilterId,
-						IsFile = x.IsFile,
-					}).ToList();
+					.Where(x => x.ParentId == ParentId).ToList();
 			}
 			else
 			{
@@ -65,66 +37,38 @@ namespace FileManager.Data
 					.Where(x => x.FilterPath == path)
 					.Select(x => x.ParentId).First();
 				response.CWD = dataSource
-					.Where(x => x.Id == (fileDetails.Length > 0 && fileDetails[0] != null ? fileDetails[0].Id : id))
-					.Select(x => new CustomFileManagerDirectoryContent()
-					{
-						Id = x.Id,
-						Name = x.Name,
-						Size = x.Size,
-						DateCreated = x.DateCreated,
-						DateModified = x.DateModified,
-						Type = Path.GetExtension(x.Name),
-						HasChild = x.HasChild,
-						ParentId = x.ParentId,
-						FilterPath = x.FilterPath,
-						FilterId = x.FilterId,
-						IsFile = x.IsFile,
-					}).First();
+					.Where(x => x.Id == (fileDetails.Length > 0 && fileDetails[0] != null ? fileDetails[0].Id : id)).First();
 				response.Files = dataSource
-					.Where(x => x.ParentId == (fileDetails.Length > 0 && fileDetails[0] != null ? fileDetails[0].Id : id))
-					.Select(x => new CustomFileManagerDirectoryContent()
-					{
-						Id = x.Id,
-						Name = x.Name,
-						Size = x.Size,
-						DateCreated = x.DateCreated,
-						DateModified = x.DateModified,
-						Type = x.Type,
-						ParentId = (fileDetails.Length > 0 && fileDetails[0] != null ? fileDetails[0].Id : id),
-						HasChild = x.HasChild,
-						FilterPath = x.FilterPath,
-						FilterId = x.FilterId,
-						IsFile = x.IsFile,
-					}).ToList();
+					.Where(x => x.ParentId == (fileDetails.Length > 0 && fileDetails[0] != null ? fileDetails[0].Id : id)).ToList();
 			}
-			return response;
+			return Task.FromResult(response);
 		}
-		public FileManagerResponse<FileManagerDirectoryContent> Delete(string path, List<FileManagerDirectoryContent> dataSource, FileManagerDirectoryContent[] fileDetails)
+		public Task<FileManagerResponse<CustomFileManagerDirectoryContent>> Delete(string path, List<CustomFileManagerDirectoryContent> dataSource, CustomFileManagerDirectoryContent[] fileDetails)
 		{
-			FileManagerResponse<FileManagerDirectoryContent> response = new FileManagerResponse<FileManagerDirectoryContent>();
-			var idsToDelete = fileDetails.Cast<FileManagerDirectoryContent>().Select(x => x.Id).ToList();
-			idsToDelete.AddRange(dataSource.Where(file => idsToDelete.Contains((file as FileManagerDirectoryContent).ParentId)).Select(file => (file as FileManagerDirectoryContent).Id));
-			dataSource.RemoveAll(file => idsToDelete.Contains((file as FileManagerDirectoryContent).Id));
+			FileManagerResponse<CustomFileManagerDirectoryContent> response = new FileManagerResponse<CustomFileManagerDirectoryContent>();
+			var idsToDelete = fileDetails.Cast<CustomFileManagerDirectoryContent>().Select(x => x.Id).ToList();
+			idsToDelete.AddRange(dataSource.Where(file => idsToDelete.Contains((file).ParentId)).Select(file => (file).Id));
+			dataSource.RemoveAll(file => idsToDelete.Contains((file).Id));
 			response.Files = fileDetails.ToList();
-			return response;
+			return Task.FromResult(response);
 		}
 
-		public FileManagerResponse<FileManagerDirectoryContent> Details(string path, List<FileManagerDirectoryContent> dataSource, FileManagerDirectoryContent[] fileDetails)
+		public Task<FileManagerResponse<CustomFileManagerDirectoryContent>> Details(string path, List<CustomFileManagerDirectoryContent> dataSource, CustomFileManagerDirectoryContent[] fileDetails)
 		{
-			FileManagerResponse<FileManagerDirectoryContent> response = new FileManagerResponse<FileManagerDirectoryContent>();
+			FileManagerResponse<CustomFileManagerDirectoryContent> response = new FileManagerResponse<CustomFileManagerDirectoryContent>();
 			string RootDirectoryName = dataSource
 				.Where(x => x.FilterPath == string.Empty)
 				.Select(x => x.Name).First();
 			FileDetails Details = new FileDetails();
 			if (fileDetails.Length == 0 || fileDetails.Length == 1)
 			{
-				Details.Created = (fileDetails[0] as FileManagerDirectoryContent).DateCreated.ToString();
-				Details.IsFile = (fileDetails[0] as FileManagerDirectoryContent).IsFile;
-				Details.Location = RootDirectoryName == (fileDetails[0] as FileManagerDirectoryContent).Name ? RootDirectoryName : RootDirectoryName + (fileDetails[0] as FileManagerDirectoryContent).FilterPath + (fileDetails[0] as FileManagerDirectoryContent).Name;
-				Details.Modified = (fileDetails[0] as FileManagerDirectoryContent).DateModified.ToString();
-				Details.Name = (fileDetails[0] as FileManagerDirectoryContent).Name;
-				Details.Permission = (fileDetails[0] as FileManagerDirectoryContent).Permission;
-				Details.Size = byteConversion((fileDetails[0] as FileManagerDirectoryContent).Size);
+				Details.Created = (fileDetails[0]).DateCreated.ToString();
+				Details.IsFile = (fileDetails[0]).IsFile;
+				Details.Location = RootDirectoryName == (fileDetails[0]).Name ? RootDirectoryName : RootDirectoryName + (fileDetails[0]).FilterPath + (fileDetails[0]).Name;
+				Details.Modified = (fileDetails[0]).DateModified.ToString();
+				Details.Name = (fileDetails[0]).Name;
+				Details.Permission = (fileDetails[0]).Permission;
+				Details.Size = byteConversion((fileDetails[0]).Size);
 
 			}
 			else
@@ -133,14 +77,14 @@ namespace FileManager.Data
 				Details.Size = "0";
 				for (int i = 0; i < fileDetails.Length; i++)
 				{
-					Details.Name = string.IsNullOrEmpty(previousName) ? previousName = (fileDetails[i] as FileManagerDirectoryContent).Name : previousName = previousName + ", " + (fileDetails[i] as FileManagerDirectoryContent).Name; ;
-					Details.Size = long.Parse(Details.Size) + (fileDetails[i] as FileManagerDirectoryContent).Size + "";
+					Details.Name = string.IsNullOrEmpty(previousName) ? previousName = (fileDetails[i]).Name : previousName = previousName + ", " + (fileDetails[i]).Name; ;
+					Details.Size = long.Parse(Details.Size) + (fileDetails[i]).Size + "";
 					Details.MultipleFiles = true;
 				}
 				Details.Size = byteConversion(long.Parse(Details.Size));
 			}
 			response.Details = Details;
-			return response;
+			return Task.FromResult(response);
 		}
 
 		protected String byteConversion(long fileSize)
@@ -164,13 +108,14 @@ namespace FileManager.Data
 			}
 		}
 
-		public FileManagerResponse<FileManagerDirectoryContent> Create(string path, string name, List<FileManagerDirectoryContent> dataSource, FileManagerDirectoryContent[] fileDetails)
+		public async Task<FileManagerResponse<CustomFileManagerDirectoryContent>> Create(string path, string name, List<CustomFileManagerDirectoryContent> dataSource, CustomFileManagerDirectoryContent[] fileDetails)
 		{
-			FileManagerResponse<FileManagerDirectoryContent> response = new FileManagerResponse<FileManagerDirectoryContent>();
-			List<FileManagerDirectoryContent> newFolder = new List<FileManagerDirectoryContent>();
-			int idValue = dataSource.Select(x => x as FileManagerDirectoryContent).Select(x => x.Id).ToArray().Select(int.Parse).ToArray().Max();
+			await Task.Delay(2000);
+			FileManagerResponse<CustomFileManagerDirectoryContent> response = new FileManagerResponse<CustomFileManagerDirectoryContent>();
+			List<CustomFileManagerDirectoryContent> newFolder = new List<CustomFileManagerDirectoryContent>();
+			int idValue = dataSource.Select(x => x).Select(x => x.Id).ToArray().Select(int.Parse).ToArray().Max();
 
-			newFolder.Add(new FileManagerDirectoryContent()
+			newFolder.Add(new CustomFileManagerDirectoryContent()
 			{
 				Id = (idValue + 1).ToString(),
 				Name = name,
@@ -178,60 +123,62 @@ namespace FileManager.Data
 				DateCreated = DateTime.Now,
 				DateModified = DateTime.Now,
 				Type = "",
-				ParentId = (fileDetails[0] as FileManagerDirectoryContent).Id,
+				ParentId = (fileDetails[0]).Id,
 				HasChild = false,
 				FilterPath = path,
-				FilterId = (fileDetails[0] as FileManagerDirectoryContent).FilterId + (fileDetails[0] as FileManagerDirectoryContent).Id + "/",
+				FilterId = (fileDetails[0]).FilterId + (fileDetails[0]).Id + "/",
 				IsFile = false,
 			});
 			response.Files = newFolder;
 			dataSource.AddRange(newFolder);
-			//dataSource.Select(x => x as FileManagerDirectoryContent).Where(x => x.Id == (fileDetails[0] as FileManagerDirectoryContent).Id).FirstOrDefault().HasChild = true;
-			return response;
+			dataSource.Select(x => x).Where(x => x.Id == (fileDetails[0]).Id).FirstOrDefault().HasChild = true;
+			return await Task.FromResult(response);
 		}
 
-        public FileManagerResponse<FileManagerDirectoryContent> Search(string path, string searchString, List<FileManagerDirectoryContent> dataSource, FileManagerDirectoryContent[] fileDetails)
+        public Task<FileManagerResponse<CustomFileManagerDirectoryContent>> Search(string path, string searchString, List<CustomFileManagerDirectoryContent> dataSource, CustomFileManagerDirectoryContent[] fileDetails)
 		{
-			FileManagerResponse<FileManagerDirectoryContent> response = new FileManagerResponse<FileManagerDirectoryContent>();
+			FileManagerResponse<CustomFileManagerDirectoryContent> response = new FileManagerResponse<CustomFileManagerDirectoryContent>();
             char[] i = new Char[] { '*' };
-            FileManagerDirectoryContent[] searchFiles = dataSource.Select(x => x as FileManagerDirectoryContent).Where(x => x.Name.ToLower().Contains(searchString.TrimStart(i).TrimEnd(i).ToLower())).Select(x => x).ToArray();
+            CustomFileManagerDirectoryContent[] searchFiles = dataSource.Select(x => x).Where(x => x.Name.ToLower().Contains(searchString.TrimStart(i).TrimEnd(i).ToLower())).Select(x => x).ToArray();
             response.Files = searchFiles.ToList();
             response.CWD = fileDetails.ToList().First();
-            return response;
+            return Task.FromResult(response);
 		}
 
-		public FileManagerResponse<FileManagerDirectoryContent> Rename(string path, string newName, List<FileManagerDirectoryContent> dataSource, FileManagerDirectoryContent[] fileDetails)
+		public Task<FileManagerResponse<CustomFileManagerDirectoryContent>> Rename(string path, string newName, List<CustomFileManagerDirectoryContent> dataSource, CustomFileManagerDirectoryContent[] fileDetails)
 		{
-			FileManagerResponse<FileManagerDirectoryContent> response = new FileManagerResponse<FileManagerDirectoryContent>();
-			FileManagerDirectoryContent renamedFolder = dataSource.Select(x => x as FileManagerDirectoryContent).Where(x => x.Id == (fileDetails[0] as FileManagerDirectoryContent).Id).FirstOrDefault();
+			FileManagerResponse<CustomFileManagerDirectoryContent> response = new FileManagerResponse<CustomFileManagerDirectoryContent>();
+			CustomFileManagerDirectoryContent renamedFolder = dataSource.Select(x => x).Where(x => x.Id == (fileDetails[0]).Id).FirstOrDefault();
 			renamedFolder.Name = newName;
 			renamedFolder.DateModified = DateTime.Now;
 			response.Files = fileDetails.ToList();
-			dataSource.Select(x => x as FileManagerDirectoryContent).Where(x => x.Id == (fileDetails[0] as FileManagerDirectoryContent).Id).FirstOrDefault().Name = newName;
-			return response;
+			dataSource.Select(x => x).Where(x => x.Id == (fileDetails[0]).Id).FirstOrDefault().Name = newName;
+			return Task.FromResult(response);
 		}
 
-		public FileManagerResponse<FileManagerDirectoryContent> Move(string path, FileManagerDirectoryContent targetData, List<FileManagerDirectoryContent> dataSource, FileManagerDirectoryContent[] fileDetails)
+		public async Task<FileManagerResponse<CustomFileManagerDirectoryContent>> Move(string path, CustomFileManagerDirectoryContent targetData, List<CustomFileManagerDirectoryContent> dataSource, CustomFileManagerDirectoryContent[] fileDetails)
 		{
-			FileManagerResponse<FileManagerDirectoryContent> response = new FileManagerResponse<FileManagerDirectoryContent>();
-			response.Files = new List<FileManagerDirectoryContent>();
-			foreach (FileManagerDirectoryContent file in fileDetails)
+			await Task.Delay(2000);
+			FileManagerResponse<CustomFileManagerDirectoryContent> response = new FileManagerResponse<CustomFileManagerDirectoryContent>();
+			response.Files = new List<CustomFileManagerDirectoryContent>();
+			foreach (CustomFileManagerDirectoryContent file in fileDetails)
 			{
-				FileManagerDirectoryContent movedFile = dataSource.Select(x => x as FileManagerDirectoryContent).Where(x => x.Name == file.Name).FirstOrDefault();
+                CustomFileManagerDirectoryContent movedFile = dataSource.Select(x => x).Where(x => x.Name == file.Name).FirstOrDefault();
 				movedFile.ParentId = targetData.Id;
-				movedFile.FilterPath = targetData.FilterPath + targetData.Name + "/";
+				movedFile.FilterPath = targetData.FilterPath.Replace(@"\", "/", StringComparison.Ordinal) + targetData.Name + "/";
 				movedFile.FilterId = targetData.FilterId + targetData.Id + "/";
 				response.Files.Add(movedFile);
-				dataSource.Select(x => x as FileManagerDirectoryContent).Where(x => x.Name == file.Name).FirstOrDefault().ParentId = targetData.Id;
-				dataSource.Select(x => x as FileManagerDirectoryContent).Where(x => x.Name == file.Name).FirstOrDefault().FilterPath = targetData.FilterPath + targetData.Name + "/";
-				dataSource.Select(x => x as FileManagerDirectoryContent).Where(x => x.Name == file.Name).FirstOrDefault().FilterId = targetData.FilterId + targetData.Id + "/";
+				dataSource.Select(x => x).Where(x => x.Name == file.Name).FirstOrDefault().ParentId = targetData.Id;
+				dataSource.Select(x => x).Where(x => x.Name == file.Name).FirstOrDefault().FilterPath = targetData.FilterPath.Replace(@"\", "/", StringComparison.Ordinal) + targetData.Name + "/";
+				dataSource.Select(x => x).Where(x => x.Name == file.Name).FirstOrDefault().FilterId = targetData.FilterId + targetData.Id + "/";
 			}
-			return response;
+			return await Task.FromResult(response);
 		}
 
-		public FileManagerResponse<FileManagerDirectoryContent> Copy(string path, FileManagerDirectoryContent targetData, List<FileManagerDirectoryContent> dataSource, FileManagerDirectoryContent[] data)
+		public async Task<FileManagerResponse<CustomFileManagerDirectoryContent>> Copy(string path, CustomFileManagerDirectoryContent targetData, List<CustomFileManagerDirectoryContent> dataSource, CustomFileManagerDirectoryContent[] data)
 		{
-            FileManagerResponse<FileManagerDirectoryContent> copyResponse = new FileManagerResponse<FileManagerDirectoryContent>();
+			await Task.Delay(1000);
+            FileManagerResponse<CustomFileManagerDirectoryContent> copyResponse = new FileManagerResponse<CustomFileManagerDirectoryContent>();
             List<string> children = dataSource.Where(x => x.ParentId == data[0].Id).Select(x => x.Id).ToList();
             if (children.IndexOf(targetData.Id) != -1 || data[0].Id == targetData.Id)
             {
@@ -239,18 +186,18 @@ namespace FileManager.Data
                 er.Code = "400";
                 er.Message = "The destination folder is the subfolder of the source folder.";
                 copyResponse.Error = er;
-                return copyResponse;
+                return await Task.FromResult(copyResponse);
             }
-            foreach (FileManagerDirectoryContent item in data)
+            foreach (CustomFileManagerDirectoryContent item in data)
             {
                 try
                 {
-                    int idValue = dataSource.Select(x => x as FileManagerDirectoryContent).Select(x => x.Id).ToArray().Select(int.Parse).ToArray().Max();
+                    int idValue = dataSource.Select(x => x).Select(x => x.Id).ToArray().Select(int.Parse).ToArray().Max();
                     if (item.IsFile)
                     {
                         // Copy the file
-                        List<FileManagerDirectoryContent> i = dataSource.Where(x => x.Id == item.Id).Select(x => x).ToList();
-                        FileManagerDirectoryContent CreateData = new FileManagerDirectoryContent()
+                        List<CustomFileManagerDirectoryContent> i = dataSource.Where(x => x.Id == item.Id).Select(x => x).ToList();
+                        CustomFileManagerDirectoryContent CreateData = new CustomFileManagerDirectoryContent()
                         {
                             Id = (idValue + 1).ToString(),
                             Name = item.Name,
@@ -274,7 +221,7 @@ namespace FileManager.Data
                     return null;
                 }
             }
-            foreach (FileManagerDirectoryContent item in data)
+            foreach (CustomFileManagerDirectoryContent item in data)
             {
                 try
                 {
@@ -290,16 +237,16 @@ namespace FileManager.Data
                 }
             }
             copyResponse.Files = copyFiles;
-            return copyResponse;
+            return await Task.FromResult(copyResponse);
         }
 
-        public void copyFolderItems(FileManagerDirectoryContent item, FileManagerDirectoryContent target, List<FileManagerDirectoryContent> dataSource)
+        public void copyFolderItems(CustomFileManagerDirectoryContent item, CustomFileManagerDirectoryContent target, List<CustomFileManagerDirectoryContent> dataSource)
         {
             if (!item.IsFile)
             {
-                int idVal = dataSource.Select(x => x as FileManagerDirectoryContent).Select(x => x.Id).ToArray().Select(int.Parse).ToArray().Max();
-                List<FileManagerDirectoryContent> i = dataSource.Where(x => x.Id == item.Id).Select(x => x).ToList();
-                FileManagerDirectoryContent CreateData = new FileManagerDirectoryContent()
+                int idVal = dataSource.Select(x => x).Select(x => x.Id).ToArray().Select(int.Parse).ToArray().Max();
+                List<CustomFileManagerDirectoryContent> i = dataSource.Where(x => x.Id == item.Id).Select(x => x).ToList();
+                CustomFileManagerDirectoryContent CreateData = new CustomFileManagerDirectoryContent()
                 {
                     Id = (idVal + 1).ToString(),
                     Name = item.Name,
@@ -320,18 +267,18 @@ namespace FileManager.Data
 					dataSource.Where(x => x.Id == target.Id).Select(x => x).ToList()[0].HasChild = true;
 				}
             }
-            FileManagerDirectoryContent[] childs = dataSource.Where(x => x.ParentId == item.Id).Select(x => x).ToArray();
-            int idValue = dataSource.Select(x => x as FileManagerDirectoryContent).Select(x => x.Id).ToArray().Select(int.Parse).ToArray().Max();
+            CustomFileManagerDirectoryContent[] childs = dataSource.Where(x => x.ParentId == item.Id).Select(x => x).ToArray();
+            int idValue = dataSource.Select(x => x).Select(x => x.Id).ToArray().Select(int.Parse).ToArray().Max();
             if (childs.Length > 0)
             {
-                foreach (FileManagerDirectoryContent child in childs)
+                foreach (CustomFileManagerDirectoryContent child in childs)
                 {
                     if (child.IsFile)
                     {
-                        int idVal = dataSource.Select(x => x as FileManagerDirectoryContent).Select(x => x.Id).ToArray().Select(int.Parse).ToArray().Max();
+                        int idVal = dataSource.Select(x => x).Select(x => x.Id).ToArray().Select(int.Parse).ToArray().Max();
 
                         // Copy the file
-                        FileManagerDirectoryContent CreateData = new FileManagerDirectoryContent()
+                        CustomFileManagerDirectoryContent CreateData = new CustomFileManagerDirectoryContent()
                         {
                             Id = (idVal + 1).ToString(),
                             Name = child.Name,
@@ -348,7 +295,7 @@ namespace FileManager.Data
 						dataSource.Add(CreateData);
                     }
                 }
-                foreach (FileManagerDirectoryContent child in childs)
+                foreach (CustomFileManagerDirectoryContent child in childs)
                 {
                     if (!child.IsFile)
                     {

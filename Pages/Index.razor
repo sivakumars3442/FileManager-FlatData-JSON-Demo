@@ -5,14 +5,14 @@
 @using Microsoft.AspNetCore.Mvc
 @inject PhysicalFileProvider PhysicalFileProvider
 @inject FileService FileService
-<SfFileManager TValue="CustomFileManagerDirectoryContent" View="ViewType.Details">
+<SfFileManager TValue="CustomFileManagerDirectoryContent">
     <FileManagerUploadSettings DirectoryUpload=false></FileManagerUploadSettings>
-    <FileManagerEvents TValue="CustomFileManagerDirectoryContent" OnRead="OnRead"></FileManagerEvents>
+    <FileManagerEvents TValue="CustomFileManagerDirectoryContent" OnRead="OnRead" OnDelete="OnDelete" Deleted="Deleted" OnGetDetails="OnDetails" OnFolderCreate="OnModelCreate" FolderCreated="ModelCreated" OnSearch="OnSearch" OnRename="OnRename" Renamed="Renamed" OnCopy="OnCopy" Copied="Copied" OnMove="OnMove" Moved="Moved" OnSuccess="OnSuccess" BeforeImageLoad="BeforeImageLoad" BeforeDownload="BeforeDownload"></FileManagerEvents>
 </SfFileManager>
 @code{
     public class CustomFileManagerDirectoryContent : FileManagerDirectoryContent
     {
-        public Stream StreamData {get; set; }
+        public Stream StreamData {get; internal set; }
     }
     public List<CustomFileManagerDirectoryContent> Data { get; set; }
     List<string> SubFolders { get; set; }
@@ -41,147 +41,88 @@
                             .ToList();
             SubFolderList.AddRange(NestedFiles);
         }
-  //       for (int i = 0; i < SubFolders.Count; i++)
-  //       {
-  //           var NestedData = PhysicalFileProvider.GetFiles(SubFolders[i], false, null);
-  //           Data.AddRange(NestedData.Files);
-		// 	List<string> NestedFiles = NestedData.Files
-  //                           .Where(file => !file.IsFile)
-  //                           .Select(file => (file.FilterPath + file.Name).Replace(@"\", "/", StringComparison.Ordinal) + "/")
-  //                           .ToList();
-		// 	SubFolders.AddRange(NestedFiles);
-		// }
-     
     }
 
-    public void OnRead(ReadEventArgs<CustomFileManagerDirectoryContent> args)
+    public async Task OnRead(ReadEventArgs<CustomFileManagerDirectoryContent> args)
     {
-        args.Response = FileService.Read(args.Path, Data, args.FileDetails);
+        args.Response = await FileService.Read(args.Path, Data, args.FileDetails);
     }
 
-    // public void OnDelete(DeleteEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
-    //     args.Response = PhysicalFileProvider.Delete(args.Path, args.Names, args.FileDetails);
-    // }
+    public async Task OnDelete(DeleteEventArgs<CustomFileManagerDirectoryContent> args)
+    {
+        args.Response = await FileService.Delete(args.Path, Data, args.FileDetails);
+    }
 
-    // public void Deleted(DeletedEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
+    public void Deleted(DeletedEventArgs<CustomFileManagerDirectoryContent> args)
+    {
 
-    // }
+    }
 
-    // public void OnDetails(DetailsEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
-    //     string[] names = args.FileDetails.Select(x => x.Name).ToArray();
-    //     args.Response = PhysicalFileProvider.Details(args.Path, names, args.FileDetails);
-    // }
+    public async Task OnDetails(DetailsEventArgs<CustomFileManagerDirectoryContent> args)
+    {
+        string[] names = args.FileDetails.Select(x => x.Name).ToArray();
+        args.Response = await FileService.Details(args.Path, Data, args.FileDetails);
+    }
 
-    // public void OnModelCreate(FolderCreateEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
-    //     args.Response = PhysicalFileProvider.Create(args.Path, args.CreatedFolderName, args.FileDetails);
-    // }
+    public async Task OnModelCreate(FolderCreateEventArgs<CustomFileManagerDirectoryContent> args)
+    {
+        args.Response = await FileService.Create(args.Path, args.CreatedFolderName, Data, args.FileDetails);
+    }
 
-    // public void ModelCreated(FolderCreatedEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
+    public void ModelCreated(FolderCreatedEventArgs<CustomFileManagerDirectoryContent> args)
+    {
 
-    // }
+    }
 
-    // public void OnSearch(SearchEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
-    //     args.Response = PhysicalFileProvider.Search(args.Path, args.SearchString, false, false, args.FileDetails);
-    // }
+    public async Task OnSearch(SearchEventArgs<CustomFileManagerDirectoryContent> args)
+    {
+        args.Response = await FileService.Search(args.Path, args.SearchString, Data, args.FileDetails);
+    }
 
-    // public void OnRename(RenameEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
-    //     args.Response = PhysicalFileProvider.Rename(args.Path, args.Name, args.NewName, false, args.ShowFileExtension, args.FileDetails);
-    // }
+    public async Task OnRename(RenameEventArgs<CustomFileManagerDirectoryContent> args)
+    {
+        args.Response = await FileService.Rename(args.Path, args.NewName, Data, args.FileDetails);
+    }
 
-    // public void Renamed(RenamedEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
+    public void Renamed(RenamedEventArgs<CustomFileManagerDirectoryContent> args)
+    {
 
-    // }
+    }
 
-    // public void OnCopy(TransferEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
-    //     args.Response = PhysicalFileProvider.Copy(args.Path, args.TargetPath, args.Names, args.RenameFiles, args.TargetData, args.FileDetails);
-    // }
+    public async Task OnCopy(TransferEventArgs<CustomFileManagerDirectoryContent> args)
+    {
+        args.Response = await FileService.Copy(args.Path, args.TargetData as CustomFileManagerDirectoryContent, Data, args.FileDetails);
+    }
 
-    // public void Copied(TransferedEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
+    public void Copied(TransferedEventArgs<CustomFileManagerDirectoryContent> args)
+    {
 
-    // }
+    }
 
-    // public void OnMove(TransferEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
-    //     args.Response = PhysicalFileProvider.Move(args.Path, args.TargetPath, args.Names, args.RenameFiles, args.TargetData, args.FileDetails);
-    // }
+    public async Task OnMove(TransferEventArgs<CustomFileManagerDirectoryContent> args)
+    {
+        args.Response = await FileService.Move(args.Path, args.TargetData as CustomFileManagerDirectoryContent, Data, args.FileDetails);
+    }
 
-    // public void Moved(TransferedEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
+    public void Moved(TransferedEventArgs<CustomFileManagerDirectoryContent> args)
+    {
 
-    // }
-    // void OnSend(BeforeSendEventArgs args)
-    // {
+    }
+    public void OnSuccess(SuccessEventArgs<CustomFileManagerDirectoryContent> args)
+    {
 
-    // }
-    // public void OnUpload(UploadEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
-    //     //PhysicalFileProvider.UploadFlatData(args.Path, args.FilesData, args.Action, args.FileDetails);
-    // }
-    // public void OnSuccess(SuccessEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
+    }
+    public void BeforeImageLoad(BeforeImageLoadEventArgs<CustomFileManagerDirectoryContent> args)
+    {
+        args.FileStream = args.FileDetails.StreamData;
+    }
 
-    // }
-    // public async Task UploadSuccess(UploadSuccessEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
-    //     args.IsSelected = true;
-    //     args.AutoDialogClose = true;
-    //     try
-    //     {
-    //         foreach (var file in args.Files)
-    //         {
-    //             var folders = (file.FileInfo.Name).Split('/');
-    //                 // checking the folder upload
-    //                 if (folders.Length > 1)
-    //                 {
-    //                     for (var i = 0; i < folders.Length - 1; i++)
-    //                     {
-    //                         string newDirectoryPath = Path.Combine(PhysicalFileProvider.basePath + args.Path, folders[i]);
-    //                         if (Path.GetFullPath(newDirectoryPath) != (Path.GetDirectoryName(newDirectoryPath) + Path.DirectorySeparatorChar + folders[i]))
-    //                         {
-    //                             throw new UnauthorizedAccessException("Access denied for Directory-traversal");
-    //                         }
-    //                         if (!Directory.Exists(newDirectoryPath))
-    //                         {
-    //                            PhysicalFileProvider.Create(args.Path, folders[i]);
-    //                         }
-    //                         args.Path += folders[i] + "/";
-    //                     }
-    //                 }
-    //             var fullName = Path.Combine((PhysicalFileProvider.contentRootPath + args.Path), file.File.Name);
-    //             using (var filestream = new FileStream(fullName, FileMode.Create, FileAccess.Write))
-    //             {
-    //                 await file.File.OpenReadStream(long.MaxValue).CopyToAsync(filestream);
-    //             }
-    //         }
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         Console.WriteLine(ex.Message);
-    //     }
-    // }
-
-    // public void BeforeImageLoad(BeforeImageLoadEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
-    //     var result = PhysicalFileProvider.GetImage(args.ImagePath, false, args.FileDetails);
-    //     args.FileStream = result.FileStream;
-    // }
-
-    // public void BeforeDownload(BeforeDownloadEventArgs<CustomFileManagerDirectoryContent> args)
-    // {
-    //     var downloadData = PhysicalFileProvider.Download(args.DownloadData.Path, args.DownloadData.Names, args.DownloadData.DownloadFileDetails.ToArray());
-    //     args.FileStream = downloadData.FileStream;
-    //     args.DownloadFileName = downloadData.FileDownloadName;
-    // }
+    public void BeforeDownload(BeforeDownloadEventArgs<CustomFileManagerDirectoryContent> args)
+    {
+        var downloadData = FileService.GetExampleStream();
+        args.FileStream = args.DownloadData.DownloadFileDetails[0].StreamData;
+        args.DownloadFileName = args.DownloadData.DownloadFileDetails[0].IsFile ? args.DownloadData.DownloadFileDetails[0].Name : args.DownloadData.DownloadFileDetails[0].Name +".zip";
+    }
 }
 
 

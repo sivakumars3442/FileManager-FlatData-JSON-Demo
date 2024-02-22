@@ -21,67 +21,67 @@
     //     args.Response = PhysicalFileProvider.Read(args.Path, Data, args.FileDetails);
     // }
 
-    public void OnDelete(DeleteEventArgs<FileManagerDirectoryContent> args)
-    {
-        string[] names = args.FileDetails.Select(x => x.Name).ToArray();
-        args.Response = PhysicalFileProvider.Delete(args.Path, Data, args.FileDetails);
-    }
+    // public void OnDelete(DeleteEventArgs<FileManagerDirectoryContent> args)
+    // {
+    //     string[] names = args.FileDetails.Select(x => x.Name).ToArray();
+    //     args.Response = PhysicalFileProvider.Delete(args.Path, Data, args.FileDetails);
+    // }
 
-    public void Deleted(DeletedEventArgs<FileManagerDirectoryContent> args)
-    {
+    // public void Deleted(DeletedEventArgs<FileManagerDirectoryContent> args)
+    // {
 
-    }
+    // }
 
-    public void OnDetails(DetailsEventArgs<FileManagerDirectoryContent> args)
-    {
-        string[] names = args.FileDetails.Select(x => x.Name).ToArray();
-        args.Response = PhysicalFileProvider.Details(args.Path, Data, args.FileDetails);
-    }
+    // public void OnDetails(DetailsEventArgs<FileManagerDirectoryContent> args)
+    // {
+    //     string[] names = args.FileDetails.Select(x => x.Name).ToArray();
+    //     args.Response = PhysicalFileProvider.Details(args.Path, Data, args.FileDetails);
+    // }
 
-    public void OnModelCreate(FolderCreateEventArgs<FileManagerDirectoryContent> args)
-    {
-        args.Response = PhysicalFileProvider.Create(args.Path, args.CreatedFolderName, Data, args.FileDetails);
-    }
+    // public void OnModelCreate(FolderCreateEventArgs<FileManagerDirectoryContent> args)
+    // {
+    //     args.Response = PhysicalFileProvider.Create(args.Path, args.CreatedFolderName, Data, args.FileDetails);
+    // }
 
-    public void ModelCreated(FolderCreatedEventArgs<FileManagerDirectoryContent> args)
-    {
+    // public void ModelCreated(FolderCreatedEventArgs<FileManagerDirectoryContent> args)
+    // {
 
-    }
+    // }
 
-    public void OnSearch(SearchEventArgs<FileManagerDirectoryContent> args)
-    {
-        args.Response = PhysicalFileProvider.Search(args.Path, args.SearchString, Data, args.FileDetails);
-    }
+    // public void OnSearch(SearchEventArgs<FileManagerDirectoryContent> args)
+    // {
+    //     args.Response = PhysicalFileProvider.Search(args.Path, args.SearchString, Data, args.FileDetails);
+    // }
 
-    public void OnRename(RenameEventArgs<FileManagerDirectoryContent> args)
-    {
-        args.Response = PhysicalFileProvider.Rename(args.Path, args.NewName, Data, args.FileDetails);
-    }
+    // public void OnRename(RenameEventArgs<FileManagerDirectoryContent> args)
+    // {
+    //     args.Response = PhysicalFileProvider.Rename(args.Path, args.NewName, Data, args.FileDetails);
+    // }
 
-    public void Renamed(RenamedEventArgs<FileManagerDirectoryContent> args)
-    {
+    // public void Renamed(RenamedEventArgs<FileManagerDirectoryContent> args)
+    // {
 
-    }
+    // }
 
-    public void OnCopy(TransferEventArgs<FileManagerDirectoryContent> args)
-    {
-        args.Response = PhysicalFileProvider.Copy(args.Path, args.TargetData, Data, args.FileDetails);
-    }
+    // public void OnCopy(TransferEventArgs<FileManagerDirectoryContent> args)
+    // {
+    //     args.Response = PhysicalFileProvider.Copy(args.Path, args.TargetData, Data, args.FileDetails);
+    // }
 
-    public void Copied(TransferedEventArgs<FileManagerDirectoryContent> args)
-    {
+    // public void Copied(TransferedEventArgs<FileManagerDirectoryContent> args)
+    // {
 
-    }
+    // }
 
-    public void OnMove(TransferEventArgs<FileManagerDirectoryContent> args)
-    {
-        args.Response = PhysicalFileProvider.Move(args.Path, args.TargetData, Data, args.FileDetails);
-    }
+    // public void OnMove(TransferEventArgs<FileManagerDirectoryContent> args)
+    // {
+    //     args.Response = PhysicalFileProvider.Move(args.Path, args.TargetData, Data, args.FileDetails);
+    // }
 
-    public void Moved(TransferedEventArgs<FileManagerDirectoryContent> args)
-    {
+    // public void Moved(TransferedEventArgs<FileManagerDirectoryContent> args)
+    // {
 
-    }
+    // }
     public void OnUpload(UploadEventArgs<FileManagerDirectoryContent> args)
     {
         //PhysicalFileProvider.UploadFlatData(args.Path, args.FilesData, args.Action, args.FileDetails);
